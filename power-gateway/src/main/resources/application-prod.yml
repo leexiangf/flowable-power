@@ -1,0 +1,28 @@
+# 生产：Nacos 服务发现 + lb://；调试鉴权强制关闭
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${NACOS_ADDR}
+        fail-fast: true
+    gateway:
+      routes:
+        - id: power-auth
+          uri: lb://power-auth
+          predicates:
+            - Path=/auth/**
+        - id: power-system
+          uri: lb://power-system
+          predicates:
+            - Path=/system/**
+
+power:
+  security:
+    jwt-secret: ${JWT_SECRET}
+    debug-auth-enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.power: INFO

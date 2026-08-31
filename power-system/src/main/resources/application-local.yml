@@ -1,0 +1,38 @@
+# 本地：对接 docker/docker-compose.yml（宿主机访问映射端口）
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        fail-fast: false
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/power?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  rabbitmq:
+    host: ${RABBIT_HOST:127.0.0.1}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASSWORD:guest}
+
+power:
+  security:
+    jwt-secret: ${JWT_SECRET:flowable-power-local-jwt-secret-change-me-32bytes}
+    debug-auth-enabled: true
+    debug-auth-token: ${DEBUG_AUTH_TOKEN:local-only-change-me}
+  exception:
+    include-source: true
+  feign:
+    auth-url: ${POWER_AUTH_URL:http://127.0.0.1:8081}
+
+logging:
+  level:
+    root: INFO
+    com.power: DEBUG

@@ -1,0 +1,17 @@
+target/
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+*.log
+*.class
+.DS_Store
+*.jar
+!**/src/main/**/lib/*.jar
+.factorypath
+**/application-secret.yml
+docker/.env

@@ -1,0 +1,38 @@
+# 生产：敏感项必须通过环境变量注入
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: ${NACOS_ADDR}
+        fail-fast: true
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:power}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  rabbitmq:
+    host: ${RABBIT_HOST}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER}
+    password: ${RABBIT_PASSWORD}
+
+power:
+  security:
+    jwt-secret: ${JWT_SECRET}
+    debug-auth-enabled: false
+  exception:
+    include-source: false
+  # 生产走服务发现，url 留空由 Feign + LoadBalancer 解析 power-auth
+  feign:
+    auth-url: ${POWER_AUTH_URL:}
+
+logging:
+  level:
+    root: WARN
+    com.power: INFO

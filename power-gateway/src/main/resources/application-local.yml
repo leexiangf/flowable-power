@@ -1,0 +1,29 @@
+# 本地：不依赖 Nacos，直连本机 auth/system；中间件变量与 docker/.env.example 对齐
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        fail-fast: false
+    gateway:
+      routes:
+        - id: power-auth
+          uri: ${GATEWAY_AUTH_URI:http://127.0.0.1:8081}
+          predicates:
+            - Path=/auth/**
+        - id: power-system
+          uri: ${GATEWAY_SYSTEM_URI:http://127.0.0.1:8082}
+          predicates:
+            - Path=/system/**
+
+power:
+  security:
+    jwt-secret: ${JWT_SECRET:flowable-power-local-jwt-secret-change-me-32bytes}
+    debug-auth-enabled: true
+    debug-auth-token: ${DEBUG_AUTH_TOKEN:local-only-change-me}
+
+logging:
+  level:
+    root: INFO
+    com.power: DEBUG

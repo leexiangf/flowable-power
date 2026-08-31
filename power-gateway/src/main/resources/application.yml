@@ -1,0 +1,25 @@
+# 公共配置（与环境无关）。路由目标、JWT、调试开关见 application-{local|prod}.yml
+server:
+  port: 8080
+
+spring:
+  application:
+    name: power-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+
+power:
+  security:
+    whitelist:
+      - /auth/login
+      - /auth/refresh
+      - /actuator/health
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId}] [%thread] %-5level %logger{50} - %msg%n"
