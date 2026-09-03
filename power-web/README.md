@@ -2,7 +2,9 @@
 
 Vue 3 管理端前端，对接 **power-gateway（8080）**。
 
-根仓库总览、后端启动与工作流说明见仓库根目录 [`README.md`](../README.md)。
+根仓库总览、后端启动与工作流说明：
+
+- [English](../README.md) · [中文](../README.zh.md)
 
 ## 技术栈
 
