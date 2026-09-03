@@ -1,0 +1,248 @@
+@use './variables.scss';
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--power-bg);
+  color: var(--power-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+// ── Tables ──
+.data-table {
+  width: 100%;
+
+  .el-table__body-wrapper {
+    overflow-x: hidden;
+  }
+}
+
+.el-table {
+  font-size: 12px;
+
+  th.el-table__cell {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--power-text-secondary);
+    background: var(--el-fill-color-light) !important;
+  }
+
+  .el-table__cell {
+    padding: 6px 0;
+  }
+}
+
+// ── Forms (search + dialog) ──
+.el-form {
+  --el-form-label-font-size: 11px;
+}
+
+.el-form-item {
+  margin-bottom: 12px;
+}
+
+.el-form-item__label {
+  font-size: 11px !important;
+  color: var(--power-text-secondary);
+  padding-right: 8px;
+  height: auto;
+  line-height: 22px;
+}
+
+.el-form-item__content {
+  font-size: 11px;
+  line-height: 22px;
+}
+
+.el-form-item__error {
+  font-size: 10px;
+  padding-top: 1px;
+}
+
+// Input / Select / Textarea / Number
+.el-input,
+.el-select,
+.el-textarea,
+.el-input-number,
+.el-tree-select,
+.el-cascader {
+  font-size: 11px;
+
+  .el-input__wrapper {
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  input,
+  textarea {
+    font-size: 11px !important;
+  }
+}
+
+.el-textarea__inner {
+  font-size: 11px !important;
+  padding: 4px 8px;
+  line-height: 1.45;
+}
+
+.el-select__wrapper {
+  min-height: 22px;
+  font-size: 11px;
+}
+
+.el-select__selected-item,
+.el-select__placeholder {
+  font-size: 11px;
+}
+
+.el-input-number {
+  .el-input-number__decrease,
+  .el-input-number__increase {
+    width: 22px;
+    font-size: 11px;
+  }
+}
+
+// Radio / Checkbox
+.el-radio,
+.el-checkbox {
+  height: 22px;
+
+  .el-radio__label,
+  .el-checkbox__label {
+    font-size: 11px;
+    padding-left: 6px;
+  }
+
+  .el-radio__inner,
+  .el-checkbox__inner {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+// Select dropdown
+.el-select-dropdown__item {
+  font-size: 11px;
+  height: 26px;
+  line-height: 26px;
+  padding: 0 10px;
+}
+
+// Tree select dropdown
+.el-tree-node__label {
+  font-size: 11px;
+}
+
+// Dialog forms — tighter spacing
+.el-dialog {
+  .el-form-item {
+    margin-bottom: 10px;
+  }
+
+  .el-form-item__label {
+    line-height: 22px;
+  }
+}
+
+// Search bars
+.search-bar {
+  .el-form-item {
+    margin-bottom: 8px;
+    margin-right: 8px;
+  }
+
+  .el-form-item__label {
+    font-size: 11px;
+    padding-right: 6px;
+    line-height: 22px;
+  }
+}
+
+// ── Dialogs ──
+.el-dialog__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.el-dialog__body {
+  padding: 12px 16px 4px;
+  font-size: 11px;
+}
+
+.el-dialog__footer {
+  padding: 8px 16px 12px;
+
+  .el-button {
+    font-size: 11px;
+    padding: 5px 12px;
+    height: 24px;
+  }
+}
+
+// ── Alerts ──
+.el-alert {
+  padding: 6px 10px;
+
+  .el-alert__title {
+    font-size: 11px;
+  }
+
+  .el-alert__description {
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+// ── Tags ──
+.el-tag {
+  --el-tag-font-size: 10px;
+}
+
+// ── Pagination ──
+.el-pagination {
+  --el-pagination-font-size: 11px;
+  --el-pagination-button-height: 24px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+// ── Descriptions ──
+.el-descriptions {
+  font-size: 11px;
+}
+
+// ── Buttons ──
+.el-button {
+  font-size: 11px;
+}
+
+.el-button.is-link {
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+// ── Dropdown ──
+.el-dropdown-menu__item {
+  font-size: 11px;
+  line-height: 28px;
+  padding: 0 12px;
+}
+
+// ── Login form ──
+.login-form {
+  .el-form-item {
+    margin-bottom: 12px;
+  }
+}
