@@ -29,11 +29,13 @@ public class ResourceSecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final SecurityProperties securityProperties;
+    private final TokenSessionService tokenSessionService;
     private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, securityProperties);
+        JwtAuthenticationFilter jwtFilter =
+                new JwtAuthenticationFilter(jwtTokenProvider, securityProperties, tokenSessionService, objectMapper);
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

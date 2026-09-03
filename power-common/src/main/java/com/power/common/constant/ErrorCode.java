@@ -19,7 +19,9 @@ public enum ErrorCode {
     AUTH_LOGIN_FAILED(20000, "用户名或密码错误"),
     AUTH_TOKEN_INVALID(20001, "Token 无效或已过期"),
     AUTH_USER_DISABLED(20002, "用户已禁用"),
-    AUTH_REFRESH_INVALID(20003, "刷新令牌无效");
+    AUTH_REFRESH_INVALID(20003, "刷新令牌无效"),
+    /** Distinct from token expired — client should force re-login with clear UX. */
+    AUTH_KICKED_BY_OTHER_PLATFORM(20004, "账号已在其他端登录");
 
     private final int code;
     private final String message;

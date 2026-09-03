@@ -1,8 +1,14 @@
 package com.power.gateway.filter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.power.common.constant.ErrorCode;
 import com.power.common.constant.SecurityHeaders;
+import com.power.common.constant.TokenCheckResult;
+import com.power.common.result.R;
 import com.power.common.trace.TraceContext;
 import com.power.gateway.config.GatewaySecurityProperties;
+import com.power.gateway.security.GatewayTokenSessionChecker;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -11,9 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
@@ -29,6 +39,8 @@ import java.util.UUID;
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final GatewaySecurityProperties securityProperties;
+    private final GatewayTokenSessionChecker tokenSessionChecker;
+    private final ObjectMapper objectMapper;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
@@ -44,6 +56,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         ServerHttpRequest.Builder mutate = request.mutate()
                 .header(TraceContext.HEADER_TRACE_ID, finalTraceId);
+
+        // CORS preflight — let CorsWebFilter / downstream handle, do not require JWT
+        if (HttpMethod.OPTIONS.equals(request.getMethod())) {
+            exchange.getResponse().getHeaders().set(TraceContext.HEADER_TRACE_ID, finalTraceId);
+            return chain.filter(exchange.mutate().request(mutate.build()).build());
+        }
 
         if (isWhitelisted(path)) {
             exchange.getResponse().getHeaders().set(TraceContext.HEADER_TRACE_ID, finalTraceId);
@@ -66,23 +84,54 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         String authorization = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authorization == null || !authorization.startsWith(SecurityHeaders.BEARER_PREFIX)) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return writeUnauthorized(exchange, ErrorCode.UNAUTHORIZED);
         }
 
         try {
             String token = authorization.substring(SecurityHeaders.BEARER_PREFIX.length());
             Claims claims = parseClaims(token);
-            mutate.header(SecurityHeaders.USER_ID, claims.getSubject())
-                    .header(SecurityHeaders.USERNAME, claims.get("username", String.class))
-                    .header(HttpHeaders.AUTHORIZATION, authorization);
-            exchange.getResponse().getHeaders().set(TraceContext.HEADER_TRACE_ID, finalTraceId);
-            return chain.filter(exchange.mutate().request(mutate.build()).build());
+            if ("refresh".equals(claims.get("type"))) {
+                return writeUnauthorized(exchange, ErrorCode.AUTH_TOKEN_INVALID);
+            }
+            return tokenSessionChecker.checkAccess(claims)
+                    .flatMap(result -> {
+                        if (result == TokenCheckResult.KICKED_BY_OTHER_PLATFORM) {
+                            return writeUnauthorized(exchange, ErrorCode.AUTH_KICKED_BY_OTHER_PLATFORM);
+                        }
+                        if (result == TokenCheckResult.USER_DISABLED) {
+                            return writeUnauthorized(exchange, ErrorCode.AUTH_USER_DISABLED);
+                        }
+                        if (result != TokenCheckResult.ALLOWED) {
+                            log.warn("Gateway Redis session reject, userId={}, jti={}, result={}",
+                                    claims.getSubject(), claims.getId(), result);
+                            return writeUnauthorized(exchange, ErrorCode.AUTH_TOKEN_INVALID);
+                        }
+                        ServerHttpRequest.Builder ok = mutate
+                                .header(SecurityHeaders.USER_ID, claims.getSubject())
+                                .header(SecurityHeaders.USERNAME, claims.get("username", String.class))
+                                .header(HttpHeaders.AUTHORIZATION, authorization);
+                        exchange.getResponse().getHeaders().set(TraceContext.HEADER_TRACE_ID, finalTraceId);
+                        return chain.filter(exchange.mutate().request(ok.build()).build());
+                    });
         } catch (Exception ex) {
             log.warn("Gateway JWT invalid: {}", ex.getMessage());
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return writeUnauthorized(exchange, ErrorCode.AUTH_TOKEN_INVALID);
         }
+    }
+
+    private Mono<Void> writeUnauthorized(ServerWebExchange exchange, ErrorCode errorCode) {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        byte[] bytes;
+        try {
+            bytes = objectMapper.writeValueAsBytes(R.fail(errorCode));
+        } catch (JsonProcessingException e) {
+            bytes = ("{\"code\":" + errorCode.getCode() + ",\"message\":\"" + errorCode.getMessage() + "\"}")
+                    .getBytes(StandardCharsets.UTF_8);
+        }
+        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        return response.writeWith(Mono.just(buffer));
     }
 
     private boolean isWhitelisted(String path) {

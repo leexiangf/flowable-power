@@ -17,6 +17,7 @@
         <module>power-gateway</module>
         <module>power-auth</module>
         <module>power-system</module>
+        <module>power-workflow</module>
     </modules>
 
     <properties>
@@ -30,6 +31,7 @@
         <springdoc.version>2.6.0</springdoc.version>
         <jjwt.version>0.12.6</jjwt.version>
         <hutool.version>5.8.32</hutool.version>
+        <flowable.version>7.1.0</flowable.version>
     </properties>
 
     <dependencyManagement>
@@ -101,6 +103,13 @@
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flowable</groupId>
+                <artifactId>flowable-bom</artifactId>
+                <version>${flowable.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

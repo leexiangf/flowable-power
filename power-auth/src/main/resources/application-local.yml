@@ -28,8 +28,12 @@ power:
     jwt-secret: ${JWT_SECRET:flowable-power-local-jwt-secret-change-me-32bytes}
     debug-auth-enabled: true
     debug-auth-token: ${DEBUG_AUTH_TOKEN:local-only-change-me}
+    # true=多端同时在线；false=登录时顶掉其他端，被顶端收到 code=20004
+    multi-platform-login-enabled: ${MULTI_PLATFORM_LOGIN_ENABLED:true}
   exception:
     include-source: true
+  web:
+    api-log-enabled: true
 
 logging:
   level:

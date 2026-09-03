@@ -26,8 +26,11 @@ power:
   security:
     jwt-secret: ${JWT_SECRET}
     debug-auth-enabled: false
+    multi-platform-login-enabled: ${MULTI_PLATFORM_LOGIN_ENABLED:false}
   exception:
     include-source: false
+  web:
+    api-log-enabled: false
 
 logging:
   level:

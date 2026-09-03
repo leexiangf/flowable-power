@@ -1,5 +1,10 @@
 # 生产：Nacos 服务发现 + lb://；调试鉴权强制关闭
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   cloud:
     nacos:
       discovery:
@@ -16,6 +21,10 @@ spring:
           uri: lb://power-system
           predicates:
             - Path=/system/**
+        - id: power-workflow
+          uri: lb://power-workflow
+          predicates:
+            - Path=/workflow/**
 
 power:
   security:

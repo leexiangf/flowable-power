@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.power.workflow/leave">
+
+  <process id="leave" name="请假审批" isExecutable="true">
+    <documentation>发起后进入 APPROVER 候选人组审批</documentation>
+
+    <startEvent id="startEvent" name="开始"/>
+
+    <userTask id="approveTask"
+              name="主管审批"
+              flowable:candidateGroups="APPROVER"
+              flowable:formKey="leave/approve">
+      <documentation>候选人组 = 角色编码 APPROVER</documentation>
+    </userTask>
+
+    <endEvent id="endEvent" name="结束">
+      <extensionElements>
+        <flowable:executionListener event="start" delegateExpression="${leaveProcessEndListener}"/>
+      </extensionElements>
+    </endEvent>
+
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="approveTask"/>
+    <sequenceFlow id="flow2" sourceRef="approveTask" targetRef="endEvent"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_leave">
+    <bpmndi:BPMNPlane id="BPMNPlane_leave" bpmnElement="leave">
+      <bpmndi:BPMNShape id="shape_start" bpmnElement="startEvent">
+        <omgdc:Bounds x="100" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_approve" bpmnElement="approveTask">
+        <omgdc:Bounds x="200" y="78" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end" bpmnElement="endEvent">
+        <omgdc:Bounds x="360" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_flow1" bpmnElement="flow1">
+        <omgdi:waypoint x="136" y="118"/>
+        <omgdi:waypoint x="200" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_flow2" bpmnElement="flow2">
+        <omgdi:waypoint x="300" y="118"/>
+        <omgdi:waypoint x="360" y="118"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

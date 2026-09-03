@@ -19,7 +19,10 @@ public class SecurityProperties {
 
     private List<String> whitelist = new ArrayList<>(List.of(
             "/auth/login",
+            "/auth/login/web",
+            "/auth/login/mobile",
             "/auth/refresh",
+            "/auth/logout",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -29,6 +32,12 @@ public class SecurityProperties {
     private boolean debugAuthEnabled = false;
 
     private String debugAuthToken = "local-only-change-me";
+
+    /**
+     * When true, WEB and MOBILE (and future platforms) may stay online together.
+     * When false, login on one platform kicks sessions on other platforms.
+     */
+    private boolean multiPlatformLoginEnabled = true;
 
     private DebugUser debugUser = new DebugUser();
 

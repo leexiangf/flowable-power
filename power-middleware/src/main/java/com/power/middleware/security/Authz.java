@@ -25,4 +25,17 @@ public class Authz {
         }
         return false;
     }
+
+    /** 任一权限满足即可，用于实例详情等可读接口的多权限场景 */
+    public boolean permitAny(String... authorities) {
+        if (authorities == null || authorities.length == 0) {
+            return false;
+        }
+        for (String authority : authorities) {
+            if (permit(authority)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

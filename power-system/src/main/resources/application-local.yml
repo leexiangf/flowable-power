@@ -31,6 +31,8 @@ power:
     include-source: true
   feign:
     auth-url: ${POWER_AUTH_URL:http://127.0.0.1:8081}
+  web:
+    api-log-enabled: true
 
 logging:
   level:

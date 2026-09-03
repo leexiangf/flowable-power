@@ -1,0 +1,39 @@
+# power-middleware 默认中间件增强配置（被各业务模块 application.yml 引用或复制）
+
+power:
+  rabbitmq:
+    publisher-confirm-enabled: true
+    prefetch: 10
+    concurrent-consumers: 2
+    max-concurrent-consumers: 5
+    max-attempts: 3
+    initial-retry-interval-ms: 1000
+    retry-multiplier: 2.0
+    max-retry-interval-ms: 10000
+    delayed-retry-ttl-ms: 30000
+    max-delayed-retries: 3
+    consumer:
+      demo-enabled: true
+      workflow-enabled: true
+  redis:
+    default-cache-ttl: 30m
+    lock-lease: 30s
+    rate-limit-window: 1m
+    rate-limit-max-requests: 100
+  outbox:
+    poll-interval-ms: 5000
+    # 仅 power-system 开启 Outbox 投递调度；其他模块只 enqueue
+    dispatch-enabled: true
+  web:
+    api-log-enabled: false
+    max-body-length: 2048
+
+spring:
+  rabbitmq:
+    publisher-confirm-type: correlated
+    listener:
+      simple:
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+    template:
+      mandatory: true

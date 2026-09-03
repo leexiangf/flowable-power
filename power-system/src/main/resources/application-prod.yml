@@ -31,6 +31,8 @@ power:
   # 生产走服务发现，url 留空由 Feign + LoadBalancer 解析 power-auth
   feign:
     auth-url: ${POWER_AUTH_URL:}
+  web:
+    api-log-enabled: false
 
 logging:
   level:

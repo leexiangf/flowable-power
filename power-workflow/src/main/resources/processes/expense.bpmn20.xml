@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.power.workflow/expense">
+
+  <!--
+    M3 示例：变量办理人 + 并行会签
+    启动变量：
+      managerUserId      - 部门经理 userId 字符串
+      countersignUserIds - 会签人 userId 字符串列表（List）
+    办理变量：
+      approved           - Boolean；经理/会签 complete 或 reject 写入
+    会签完成条件：全部完成，或 approved==false（一票否决提前结束多实例）
+  -->
+  <process id="expense" name="费用报销（变量办理人+会签）" isExecutable="true">
+    <documentation>先按 managerUserId 变量办理，再按 countersignUserIds 并行会签</documentation>
+
+    <startEvent id="startEvent" name="开始"/>
+
+    <userTask id="managerTask"
+              name="部门经理审批"
+              flowable:assignee="${managerUserId}"
+              flowable:formKey="expense/manager">
+      <documentation>变量办理人：assignee = ${managerUserId}</documentation>
+    </userTask>
+
+    <exclusiveGateway id="managerGateway" name="经理是否通过" default="flow_gw_reject"/>
+
+    <userTask id="countersignTask"
+              name="会签审批"
+              flowable:assignee="${assignee}"
+              flowable:formKey="expense/countersign">
+      <documentation>并行多实例：collection=countersignUserIds，elementVariable=assignee</documentation>
+      <multiInstanceLoopCharacteristics isSequential="false"
+                                        flowable:collection="${countersignUserIds}"
+                                        flowable:elementVariable="assignee">
+        <completionCondition>${nrOfCompletedInstances == nrOfInstances || approved == false}</completionCondition>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+
+    <exclusiveGateway id="countersignGateway" name="会签是否通过" default="flow_cs_reject"/>
+
+    <endEvent id="approveEnd" name="通过结束">
+      <extensionElements>
+        <flowable:executionListener event="start" delegateExpression="${expenseProcessEndListener}"/>
+      </extensionElements>
+    </endEvent>
+
+    <endEvent id="rejectEnd" name="驳回结束">
+      <extensionElements>
+        <flowable:executionListener event="start" delegateExpression="${expenseProcessEndListener}"/>
+      </extensionElements>
+    </endEvent>
+
+    <sequenceFlow id="flow_start_manager" sourceRef="startEvent" targetRef="managerTask"/>
+    <sequenceFlow id="flow_manager_gw" sourceRef="managerTask" targetRef="managerGateway"/>
+    <sequenceFlow id="flow_gw_countersign" sourceRef="managerGateway" targetRef="countersignTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow_gw_reject" sourceRef="managerGateway" targetRef="rejectEnd"/>
+    <sequenceFlow id="flow_countersign_gw" sourceRef="countersignTask" targetRef="countersignGateway"/>
+    <sequenceFlow id="flow_cs_approve" sourceRef="countersignGateway" targetRef="approveEnd">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow_cs_reject" sourceRef="countersignGateway" targetRef="rejectEnd"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_expense">
+    <bpmndi:BPMNPlane id="BPMNPlane_expense" bpmnElement="expense">
+      <bpmndi:BPMNShape id="shape_start" bpmnElement="startEvent">
+        <omgdc:Bounds x="80" y="120" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_manager" bpmnElement="managerTask">
+        <omgdc:Bounds x="170" y="98" width="110" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gw" bpmnElement="managerGateway">
+        <omgdc:Bounds x="330" y="115" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_countersign" bpmnElement="countersignTask">
+        <omgdc:Bounds x="430" y="98" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_cs_gw" bpmnElement="countersignGateway">
+        <omgdc:Bounds x="600" y="115" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_approve_end" bpmnElement="approveEnd">
+        <omgdc:Bounds x="710" y="120" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_reject_end" bpmnElement="rejectEnd">
+        <omgdc:Bounds x="337" y="220" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge1" bpmnElement="flow_start_manager">
+        <omgdi:waypoint x="116" y="138"/>
+        <omgdi:waypoint x="170" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge2" bpmnElement="flow_manager_gw">
+        <omgdi:waypoint x="280" y="138"/>
+        <omgdi:waypoint x="330" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge3" bpmnElement="flow_gw_countersign">
+        <omgdi:waypoint x="380" y="140"/>
+        <omgdi:waypoint x="430" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge4" bpmnElement="flow_gw_reject">
+        <omgdi:waypoint x="355" y="165"/>
+        <omgdi:waypoint x="355" y="220"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge5" bpmnElement="flow_countersign_gw">
+        <omgdi:waypoint x="550" y="138"/>
+        <omgdi:waypoint x="600" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge6" bpmnElement="flow_cs_approve">
+        <omgdi:waypoint x="650" y="140"/>
+        <omgdi:waypoint x="710" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge7" bpmnElement="flow_cs_reject">
+        <omgdi:waypoint x="625" y="165"/>
+        <omgdi:waypoint x="625" y="238"/>
+        <omgdi:waypoint x="373" y="238"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

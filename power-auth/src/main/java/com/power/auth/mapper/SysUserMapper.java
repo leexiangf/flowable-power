@@ -22,4 +22,27 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
               AND m.perms <> ''
             """)
     List<String> selectPermsByUserId(@Param("userId") Long userId);
+
+    @Select("""
+            SELECT DISTINCT r.role_code
+            FROM sys_role r
+            INNER JOIN sys_user_role ur ON r.id = ur.role_id
+            WHERE ur.user_id = #{userId}
+              AND r.deleted = 0
+              AND r.status = 1
+            """)
+    List<String> selectRoleCodesByUserId(@Param("userId") Long userId);
+
+    @Select("""
+            SELECT u.id
+            FROM sys_user u
+            INNER JOIN sys_user_role ur ON u.id = ur.user_id
+            INNER JOIN sys_role r ON r.id = ur.role_id
+            WHERE r.role_code = #{roleCode}
+              AND u.deleted = 0
+              AND u.status = 1
+              AND r.deleted = 0
+              AND r.status = 1
+            """)
+    List<Long> selectUserIdsByRoleCode(@Param("roleCode") String roleCode);
 }

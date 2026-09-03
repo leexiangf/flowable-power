@@ -22,7 +22,7 @@ public class JwtTokenProvider {
         this.securityProperties = securityProperties;
     }
 
-    public String createAccessToken(LoginUser user) {
+    public String createAccessToken(LoginUser user, long tokenVersion) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(securityProperties.getAccessTokenExpireSeconds());
         return Jwts.builder()
@@ -30,13 +30,15 @@ public class JwtTokenProvider {
                 .subject(String.valueOf(user.getUserId()))
                 .claim("username", user.getUsername())
                 .claim("authorities", user.getAuthorities())
+                .claim("platform", user.getPlatform())
+                .claim("ver", tokenVersion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .signWith(secretKey())
                 .compact();
     }
 
-    public String createRefreshToken(LoginUser user) {
+    public String createRefreshToken(LoginUser user, long tokenVersion) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(securityProperties.getRefreshTokenExpireSeconds());
         return Jwts.builder()
@@ -44,6 +46,8 @@ public class JwtTokenProvider {
                 .subject(String.valueOf(user.getUserId()))
                 .claim("username", user.getUsername())
                 .claim("type", "refresh")
+                .claim("platform", user.getPlatform())
+                .claim("ver", tokenVersion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .signWith(secretKey())
@@ -55,6 +59,7 @@ public class JwtTokenProvider {
         LoginUser user = new LoginUser();
         user.setUserId(Long.valueOf(claims.getSubject()));
         user.setUsername(claims.get("username", String.class));
+        user.setPlatform(claims.get("platform", String.class));
         @SuppressWarnings("unchecked")
         List<String> authorities = claims.get("authorities", List.class);
         if (authorities != null) {

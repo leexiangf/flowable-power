@@ -1,5 +1,10 @@
 # 本地：不依赖 Nacos，直连本机 auth/system；中间件变量与 docker/.env.example 对齐
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   cloud:
     nacos:
       discovery:
@@ -16,6 +21,10 @@ spring:
           uri: ${GATEWAY_SYSTEM_URI:http://127.0.0.1:8082}
           predicates:
             - Path=/system/**
+        - id: power-workflow
+          uri: ${GATEWAY_WORKFLOW_URI:http://127.0.0.1:8083}
+          predicates:
+            - Path=/workflow/**
 
 power:
   security:

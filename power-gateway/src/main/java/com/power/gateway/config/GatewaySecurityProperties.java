@@ -14,7 +14,10 @@ public class GatewaySecurityProperties {
 
     private List<String> whitelist = new ArrayList<>(List.of(
             "/auth/login",
+            "/auth/login/web",
+            "/auth/login/mobile",
             "/auth/refresh",
+            "/auth/logout",
             "/actuator/health"
     ));
 
