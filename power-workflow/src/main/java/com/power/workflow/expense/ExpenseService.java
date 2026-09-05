@@ -1,4 +1,4 @@
-package com.power.workflow.demo;
+package com.power.workflow.expense;
 
 import com.power.common.constant.ErrorCode;
 import com.power.common.exception.BizException;
@@ -6,8 +6,9 @@ import com.power.workflow.constant.ProcessKeys;
 import com.power.workflow.constant.WorkflowVars;
 import com.power.workflow.dto.ProcessInstanceVO;
 import com.power.workflow.dto.ProcessStartRequest;
-import com.power.workflow.dto.demo.ExpenseStartRequest;
+import com.power.workflow.dto.expense.ExpenseStartRequest;
 import com.power.workflow.service.ProcessInstanceAppService;
+import com.power.workflow.service.WorkflowIdentityFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,19 +23,17 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 费用报销演示：变量办理人 + 并行会签（无独立业务表，businessKey 用时间戳）。
+ * 费用报销：变量办理人 + 并行会签（无独立业务表，businessKey 使用 UUID）。
  */
 @Service
 @RequiredArgsConstructor
-public class ExpenseDemoService {
+public class ExpenseService {
 
     private final ProcessInstanceAppService processInstanceAppService;
+    private final WorkflowIdentityFacade workflowIdentityFacade;
 
     /**
      * 发起 expense 流程。
-     *
-     * @param request 发起入参
-     * @return 流程实例视图
      */
     @Transactional(rollbackFor = Exception.class)
     public ProcessInstanceVO start(ExpenseStartRequest request) {
@@ -42,23 +41,26 @@ public class ExpenseDemoService {
             throw new BizException(ErrorCode.BAD_REQUEST, "managerUserId 不能为空");
         }
         String managerUserId = request.getManagerUserId().trim();
+        workflowIdentityFacade.assertOperatorUser(managerUserId, "部门经理");
         List<String> countersign = normalizeUserIds(request.getCountersignUserIds());
         if (countersign.isEmpty()) {
             throw new BizException(ErrorCode.BAD_REQUEST, "会签人不能为空");
+        }
+        for (String uid : countersign) {
+            workflowIdentityFacade.assertOperatorUser(uid, "会签人");
         }
 
         ProcessStartRequest start = new ProcessStartRequest();
         start.setProcessDefinitionKey(ProcessKeys.EXPENSE);
         start.setBusinessKey("expense-" + UUID.randomUUID().toString().replace("-", ""));
-        start.setTitle(StringUtils.hasText(request.getTitle())
-                ? request.getTitle().trim()
-                : "费用报销演示");
+        if (StringUtils.hasText(request.getTitle())) {
+            start.setTitle(request.getTitle().trim());
+        }
 
         Map<String, Object> vars = new HashMap<>();
         vars.put(WorkflowVars.BUSINESS_TYPE, WorkflowVars.BUSINESS_TYPE_EXPENSE);
         vars.put(WorkflowVars.MANAGER_USER_ID, managerUserId);
         vars.put(WorkflowVars.COUNTERSIGN_USER_IDS, countersign);
-        // 不预置 approved，由经理 complete/reject 写入 Boolean，避免网关误判
         if (StringUtils.hasText(request.getAmount())) {
             vars.put("amount", request.getAmount().trim());
         }
@@ -66,7 +68,7 @@ public class ExpenseDemoService {
             vars.put("reason", request.getReason().trim());
         }
         start.setVariables(vars);
-        return processInstanceAppService.start(start);
+        return processInstanceAppService.startFromBusiness(start);
     }
 
     private List<String> normalizeUserIds(List<String> raw) {

@@ -1,4 +1,4 @@
-package com.power.workflow.dto.demo;
+package com.power.workflow.dto.expense;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -9,10 +9,10 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 费用报销演示发起请求（变量办理人 + 会签）。
+ * 费用报销发起请求（变量办理人 + 会签）。
  */
 @Data
-@Schema(description = "费用报销演示发起请求")
+@Schema(description = "费用报销发起请求")
 public class ExpenseStartRequest {
 
     @NotBlank
@@ -27,7 +27,7 @@ public class ExpenseStartRequest {
     @Schema(description = "标题", example = "差旅报销-上海")
     private String title;
 
-    @Schema(description = "金额说明（仅流程变量，无业务表）", example = "1200.50")
+    @Schema(description = "金额说明（流程变量）", example = "1200.50")
     private String amount;
 
     @Schema(description = "事由", example = "客户拜访差旅")

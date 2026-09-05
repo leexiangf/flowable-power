@@ -17,16 +17,16 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class RabbitTopology {
 
-    public static final String DEMO_EXCHANGE = "power.demo";
+    public static final String SYSTEM_EXCHANGE = "power.system";
     public static final String WORKFLOW_EXCHANGE = "power.workflow";
 
     public static final String DLX_EXCHANGE = "power.dlx";
     public static final String RETRY_EXCHANGE = "power.retry";
 
-    public static final String DEMO_QUEUE = "power.demo.queue";
-    public static final String DEMO_RETRY_QUEUE = "power.demo.retry";
-    public static final String DEMO_DLQ = "power.demo.dlq";
-    public static final String DEMO_ROUTING_KEY = "demo";
+    public static final String SYSTEM_QUEUE = "power.system.queue";
+    public static final String SYSTEM_RETRY_QUEUE = "power.system.retry";
+    public static final String SYSTEM_DLQ = "power.system.dlq";
+    public static final String SYSTEM_ROUTING_KEY = "system.event";
 
     public static final String WORKFLOW_COMPLETED_QUEUE = "power.workflow.completed.queue";
     public static final String WORKFLOW_CANCELLED_QUEUE = "power.workflow.cancelled.queue";
@@ -47,8 +47,8 @@ public class RabbitTopology {
     }
 
     @Bean
-    public TopicExchange demoExchange() {
-        return new TopicExchange(DEMO_EXCHANGE, true, false);
+    public TopicExchange systemExchange() {
+        return new TopicExchange(SYSTEM_EXCHANGE, true, false);
     }
 
     @Bean
@@ -57,25 +57,25 @@ public class RabbitTopology {
     }
 
     @Bean
-    public Queue demoQueue() {
-        return QueueBuilder.durable(DEMO_QUEUE)
+    public Queue systemQueue() {
+        return QueueBuilder.durable(SYSTEM_QUEUE)
                 .deadLetterExchange(DLX_EXCHANGE)
-                .deadLetterRoutingKey(DEMO_DLQ)
+                .deadLetterRoutingKey(SYSTEM_DLQ)
                 .build();
     }
 
     @Bean
-    public Queue demoRetryQueue() {
-        return QueueBuilder.durable(DEMO_RETRY_QUEUE)
+    public Queue systemRetryQueue() {
+        return QueueBuilder.durable(SYSTEM_RETRY_QUEUE)
                 .ttl((int) rabbitMqProperties.getDelayedRetryTtlMs())
-                .deadLetterExchange(DEMO_EXCHANGE)
-                .deadLetterRoutingKey(DEMO_ROUTING_KEY)
+                .deadLetterExchange(SYSTEM_EXCHANGE)
+                .deadLetterRoutingKey(SYSTEM_ROUTING_KEY)
                 .build();
     }
 
     @Bean
-    public Queue demoDlq() {
-        return QueueBuilder.durable(DEMO_DLQ).build();
+    public Queue systemDlq() {
+        return QueueBuilder.durable(SYSTEM_DLQ).build();
     }
 
     @Bean
@@ -118,8 +118,8 @@ public class RabbitTopology {
     }
 
     @Bean
-    public Binding demoQueueBinding(TopicExchange demoExchange, Queue demoQueue) {
-        return BindingBuilder.bind(demoQueue).to(demoExchange).with(DEMO_ROUTING_KEY);
+    public Binding systemQueueBinding(TopicExchange systemExchange, Queue systemQueue) {
+        return BindingBuilder.bind(systemQueue).to(systemExchange).with(SYSTEM_ROUTING_KEY);
     }
 
     @Bean
@@ -135,8 +135,8 @@ public class RabbitTopology {
     }
 
     @Bean
-    public Binding demoRetryBinding(DirectExchange retryExchange, Queue demoRetryQueue) {
-        return BindingBuilder.bind(demoRetryQueue).to(retryExchange).with(DEMO_RETRY_QUEUE);
+    public Binding systemRetryBinding(DirectExchange retryExchange, Queue systemRetryQueue) {
+        return BindingBuilder.bind(systemRetryQueue).to(retryExchange).with(SYSTEM_RETRY_QUEUE);
     }
 
     @Bean
@@ -150,8 +150,8 @@ public class RabbitTopology {
     }
 
     @Bean
-    public Binding demoDlqBinding(DirectExchange dlxExchange, Queue demoDlq) {
-        return BindingBuilder.bind(demoDlq).to(dlxExchange).with(DEMO_DLQ);
+    public Binding systemDlqBinding(DirectExchange dlxExchange, Queue systemDlq) {
+        return BindingBuilder.bind(systemDlq).to(dlxExchange).with(SYSTEM_DLQ);
     }
 
     @Bean

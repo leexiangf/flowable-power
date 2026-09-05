@@ -1,7 +1,10 @@
 package com.power.workflow.leave;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.power.common.constant.ErrorCode;
 import com.power.common.exception.BizException;
+import com.power.common.model.PageResult;
 import com.power.middleware.security.SecurityUtils;
 import com.power.workflow.constant.ProcessKeys;
 import com.power.workflow.constant.WorkflowVars;
@@ -69,11 +72,34 @@ public class LeaveService {
         vars.put("days", leave.getDays());
         vars.put("reason", leave.getReason());
         start.setVariables(vars);
+        if (request.getCcUserIds() != null && !request.getCcUserIds().isEmpty()) {
+            start.setCcUserIds(request.getCcUserIds());
+        }
 
-        ProcessInstanceVO pi = processInstanceAppService.start(start);
+        ProcessInstanceVO pi = processInstanceAppService.startFromBusiness(start);
         leave.setProcessInstanceId(pi.getId());
         leaveMapper.updateById(leave);
         return toVo(leave);
+    }
+
+    /**
+     * 分页查询当前用户的请假申请。
+     */
+    public PageResult<LeaveVO> listMine(long pageNum, long pageSize) {
+        Long userId = SecurityUtils.currentUserId();
+        if (userId == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED);
+        }
+        Page<WfLeave> page = leaveMapper.selectPage(
+                new Page<>(pageNum, pageSize),
+                new LambdaQueryWrapper<WfLeave>()
+                        .eq(WfLeave::getUserId, userId)
+                        .orderByDesc(WfLeave::getCreateTime));
+        return PageResult.of(
+                page.getRecords().stream().map(this::toVo).toList(),
+                page.getTotal(),
+                pageNum,
+                pageSize);
     }
 
     /**

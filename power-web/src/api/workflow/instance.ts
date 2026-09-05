@@ -6,6 +6,9 @@ import type {
   ProcessHighlightVO,
   ProcessInstanceVO,
   ProcessStartRequest,
+  ProcessTerminateRequest,
+  ProcessUrgeRequest,
+  TaskVO,
   WorkflowPageQuery,
 } from '@/types/workflow'
 import { request, unwrap } from '../request'
@@ -37,9 +40,45 @@ export function fetchInstanceDetail(processInstanceId: string) {
   )
 }
 
+export function fetchInstanceActiveTasks(processInstanceId: string) {
+  return unwrap(
+    request.get<ApiResult<TaskVO[]>>(`/workflow/instances/${processInstanceId}/tasks`),
+  )
+}
+
 export function cancelProcessInstance(processInstanceId: string, data?: ProcessCancelRequest) {
   return unwrap(
     request.post<ApiResult<void>>(`/workflow/instances/${processInstanceId}/cancel`, data ?? {}),
+  )
+}
+
+export function terminateProcessInstance(
+  processInstanceId: string,
+  data?: ProcessTerminateRequest,
+) {
+  return unwrap(
+    request.post<ApiResult<void>>(
+      `/workflow/instances/${processInstanceId}/terminate`,
+      data ?? {},
+    ),
+  )
+}
+
+export function suspendProcessInstance(processInstanceId: string) {
+  return unwrap(
+    request.post<ApiResult<void>>(`/workflow/instances/${processInstanceId}/suspend`),
+  )
+}
+
+export function activateProcessInstance(processInstanceId: string) {
+  return unwrap(
+    request.post<ApiResult<void>>(`/workflow/instances/${processInstanceId}/activate`),
+  )
+}
+
+export function urgeProcessInstance(processInstanceId: string, data?: ProcessUrgeRequest) {
+  return unwrap(
+    request.post<ApiResult<void>>(`/workflow/instances/${processInstanceId}/urge`, data ?? {}),
   )
 }
 

@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
+import BpmnModelerEditor from '@/components/workflow/BpmnModelerEditor.vue'
 import { fetchEnabledCategories } from '@/api/workflow/category'
 import {
   deleteModel,
@@ -30,6 +31,8 @@ const editorTitle = ref('新建模型')
 const submitting = ref(false)
 const editingId = ref<string | null>(null)
 const formRef = ref<FormInstance>()
+const modelerRef = ref<InstanceType<typeof BpmnModelerEditor> | null>(null)
+const editorMode = ref<'designer' | 'xml'>('designer')
 
 const form = reactive<ModelSaveRequest>({
   modelKey: '',
@@ -105,6 +108,13 @@ async function openEdit(row: ModelVO) {
 
 async function submitForm() {
   await formRef.value?.validate()
+  if (editorMode.value === 'designer' && modelerRef.value) {
+    form.bpmnXml = await modelerRef.value.exportXml()
+  }
+  if (!form.bpmnXml?.trim()) {
+    ElMessage.warning('BPMN 内容不能为空')
+    return
+  }
   submitting.value = true
   try {
     const payload: ModelSaveRequest = {
@@ -149,7 +159,7 @@ onMounted(async () => {
       :closable="false"
       show-icon
       class="mode-tip"
-      title="当前为轻量版：直接编辑 BPMN XML 并保存草稿；部署后可在「流程定义」中管理。"
+      title="支持 bpmn-js 可视化设计；保存草稿后可部署到「流程定义」。"
     />
 
     <el-form :inline="true" class="search-bar" @submit.prevent="handleSearch">
@@ -217,7 +227,7 @@ onMounted(async () => {
       />
     </div>
 
-    <el-drawer v-model="editorVisible" :title="editorTitle" size="640px" destroy-on-close>
+    <el-drawer v-model="editorVisible" :title="editorTitle" size="860px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="72px">
         <el-form-item label="Key" prop="modelKey">
           <el-input
@@ -249,7 +259,16 @@ onMounted(async () => {
         <el-form-item label="备注">
           <el-input v-model="form.remark" maxlength="255" />
         </el-form-item>
-        <el-form-item label="BPMN" prop="bpmnXml" class="xml-item">
+        <el-form-item label="编辑模式">
+          <el-radio-group v-model="editorMode">
+            <el-radio-button value="designer">可视化</el-radio-button>
+            <el-radio-button value="xml">XML</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="editorMode === 'designer'" label="设计器" prop="bpmnXml" class="designer-item">
+          <BpmnModelerEditor ref="modelerRef" v-model="form.bpmnXml" :xml="form.bpmnXml" />
+        </el-form-item>
+        <el-form-item v-else label="BPMN" prop="bpmnXml" class="xml-item">
           <el-input
             v-model="form.bpmnXml"
             type="textarea"
@@ -285,6 +304,13 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0 2px;
+}
+
+.designer-item {
+  :deep(.el-form-item__content) {
+    width: 100%;
+    min-height: 440px;
+  }
 }
 
 .xml-item {

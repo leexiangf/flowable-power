@@ -5,8 +5,10 @@ import type { UploadFile } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
 import { fetchEnabledCategories } from '@/api/workflow/category'
 import {
+  deleteDeployment,
   activateDefinition,
   deployDefinition,
+  downloadDefinitionXml,
   fetchDefinitionPage,
   fetchDefinitionXml,
   suspendDefinition,
@@ -120,6 +122,39 @@ async function toggleSuspend(row: ProcessDefinitionVO) {
   loadData()
 }
 
+async function handleDownload(row: ProcessDefinitionVO) {
+  await downloadDefinitionXml(row.id, `${row.key}-v${row.version}.bpmn20.xml`)
+}
+
+async function handleDeleteDeployment(row: ProcessDefinitionVO) {
+  if (!row.deploymentId) {
+    ElMessage.warning('缺少 deploymentId')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认删除部署「${row.name || row.key} v${row.version}」？\n选择「级联删除」会同时删除关联运行/历史实例。`,
+      '危险操作',
+      {
+        type: 'warning',
+        distinguishCancelAndClose: true,
+        confirmButtonText: '级联删除',
+        cancelButtonText: '仅删部署',
+      },
+    )
+    await deleteDeployment(row.deploymentId, true)
+    ElMessage.success('已级联删除部署')
+    loadData()
+  } catch (action) {
+    if (action === 'cancel') {
+      await deleteDeployment(row.deploymentId, false)
+      ElMessage.success('已删除部署')
+      loadData()
+    }
+    // close / ESC：取消操作
+  }
+}
+
 onMounted(async () => {
   await loadCategories()
   await loadData()
@@ -176,7 +211,7 @@ onMounted(async () => {
           {{ formatDateTime(row.deploymentTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="168" align="center">
+      <el-table-column label="操作" width="240" align="center">
         <template #default="{ row }">
           <div class="table-actions">
             <el-button
@@ -188,12 +223,28 @@ onMounted(async () => {
               XML
             </el-button>
             <el-button
+              v-if="hasPerm('workflow:definition:list')"
+              link
+              type="primary"
+              @click="handleDownload(row as ProcessDefinitionVO)"
+            >
+              下载
+            </el-button>
+            <el-button
               v-if="hasPerm('workflow:definition:suspend')"
               link
               :type="row.suspended ? 'success' : 'warning'"
               @click="toggleSuspend(row as ProcessDefinitionVO)"
             >
               {{ row.suspended ? '激活' : '挂起' }}
+            </el-button>
+            <el-button
+              v-if="hasPerm('workflow:definition:remove') && row.deploymentId"
+              link
+              type="danger"
+              @click="handleDeleteDeployment(row as ProcessDefinitionVO)"
+            >
+              删部署
             </el-button>
           </div>
         </template>

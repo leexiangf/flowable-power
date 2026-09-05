@@ -16,6 +16,14 @@ public final class WorkflowVars {
 
     public static final String BUSINESS_TYPE_LEAVE = "leave";
     public static final String BUSINESS_TYPE_EXPENSE = "expense";
+    public static final String BUSINESS_TYPE_COUNTERSIGN_OR = "countersign-or";
+    public static final String BUSINESS_TYPE_COUNTERSIGN_SEQ = "countersign-seq";
+
+    /** 加签模式：BEFORE / AFTER */
+    public static final String ADD_SIGN_MODE = "addSignMode";
+
+    /** 前加签归还目标 userId */
+    public static final String ADD_SIGN_RETURN_TO = "addSignReturnTo";
 
     private WorkflowVars() {
     }

@@ -26,9 +26,13 @@ public class ActivityTraceVO {
     @Schema(description = "活动类型")
     private String activityType;
 
-    /** 办理人（用户任务） */
-    @Schema(description = "办理人")
+    /** 办理人（用户任务，userId 字符串） */
+    @Schema(description = "办理人用户 ID")
     private String assignee;
+
+    /** 办理人展示名（昵称优先） */
+    @Schema(description = "办理人展示名")
+    private String assigneeName;
 
     /** 开始时间 */
     @Schema(description = "开始时间")

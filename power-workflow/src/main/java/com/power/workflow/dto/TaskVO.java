@@ -61,4 +61,27 @@ public class TaskVO {
     /** 流程标题 */
     @Schema(description = "流程标题")
     private String title;
+
+    /** 任务 owner（委派场景） */
+    @Schema(description = "任务 owner")
+    private String owner;
+
+    /** 委派状态：PENDING / RESOLVED / 空 */
+    @Schema(description = "委派状态")
+    private String delegationState;
+
+    /** 加签模式：BEFORE / AFTER */
+    @Schema(description = "加签模式")
+    private String addSignMode;
+
+    /** 是否会签（多实例）子任务，可减签 */
+    @Schema(description = "是否多实例会签任务")
+    private Boolean multiInstance;
+
+    /**
+     * 是否允许取消认领：仅候选人认领类任务为 true。
+     * 变量指定办理人（如费用经理节点）不可取消认领，否则会变成无人可见的孤儿任务。
+     */
+    @Schema(description = "是否可取消认领")
+    private Boolean canUnclaim;
 }

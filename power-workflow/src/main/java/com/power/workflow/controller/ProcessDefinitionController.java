@@ -10,7 +10,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -116,5 +120,26 @@ public class ProcessDefinitionController {
     @PreAuthorize("@authz.permit('workflow:definition:list')")
     public R<String> xml(@PathVariable String processDefinitionId) {
         return R.ok(processDefinitionAppService.getBpmnXml(processDefinitionId));
+    }
+
+    @Operation(summary = "下载 BPMN XML", description = "attachment 下载。权限码 workflow:definition:list。")
+    @GetMapping("/{processDefinitionId}/xml/download")
+    @PreAuthorize("@authz.permit('workflow:definition:list')")
+    public ResponseEntity<byte[]> downloadXml(@PathVariable String processDefinitionId) {
+        String xml = processDefinitionAppService.getBpmnXml(processDefinitionId);
+        String filename = processDefinitionAppService.resolveBpmnFilename(processDefinitionId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_XML)
+                .body(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @Operation(summary = "删除部署", description = "cascade=true 级联删除实例；权限码 workflow:definition:remove")
+    @DeleteMapping("/deployments/{deploymentId}")
+    @PreAuthorize("@authz.permit('workflow:definition:remove')")
+    public R<Void> deleteDeployment(@PathVariable String deploymentId,
+                                    @RequestParam(defaultValue = "false") boolean cascade) {
+        processDefinitionAppService.deleteDeployment(deploymentId, cascade);
+        return R.ok();
     }
 }

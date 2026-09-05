@@ -13,7 +13,7 @@ power:
     delayed-retry-ttl-ms: 30000
     max-delayed-retries: 3
     consumer:
-      demo-enabled: true
+      system-enabled: true
       workflow-enabled: true
   redis:
     default-cache-ttl: 30m

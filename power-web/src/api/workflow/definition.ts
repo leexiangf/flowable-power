@@ -45,3 +45,24 @@ export function activateDefinition(processDefinitionId: string) {
     request.post<ApiResult<void>>(`/workflow/definitions/${processDefinitionId}/activate`),
   )
 }
+
+export function deleteDeployment(deploymentId: string, cascade = false) {
+  return unwrap(
+    request.delete<ApiResult<void>>(`/workflow/definitions/deployments/${deploymentId}`, {
+      params: { cascade },
+    }),
+  )
+}
+
+export async function downloadDefinitionXml(processDefinitionId: string, filename?: string) {
+  const res = await request.get(`/workflow/definitions/${processDefinitionId}/xml/download`, {
+    responseType: 'blob',
+  })
+  const blob = res.data as Blob
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename || 'process.bpmn20.xml'
+  a.click()
+  URL.revokeObjectURL(url)
+}

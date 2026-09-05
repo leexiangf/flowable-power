@@ -64,9 +64,16 @@ public class CategoryController {
         return R.ok(categoryAppService.list(page.getPageNum(), page.getPageSize(), keyword));
     }
 
-    @Operation(summary = "启用中分类列表", description = "下拉选择；权限码 workflow:category:list")
+    @Operation(summary = "启用中分类列表",
+            description = "下拉选择（只读）。有任意工作流常用权限即可："
+                    + "category:list / definition:list / model:list / instance:list / instance:start。")
     @GetMapping("/enabled")
-    @PreAuthorize("@authz.permit('workflow:category:list')")
+    @PreAuthorize("@authz.permitAny("
+            + "'workflow:category:list',"
+            + "'workflow:definition:list',"
+            + "'workflow:model:list',"
+            + "'workflow:instance:list',"
+            + "'workflow:instance:start')")
     public R<List<CategoryVO>> listEnabled() {
         return R.ok(categoryAppService.listEnabled());
     }

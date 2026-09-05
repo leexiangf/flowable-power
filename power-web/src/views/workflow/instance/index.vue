@@ -2,6 +2,9 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageCard from '@/components/PageCard.vue'
+import BusinessStartDialog, {
+  type BizProcessKind,
+} from '@/components/workflow/BusinessStartDialog.vue'
 import InstanceDetailDrawer from '@/components/workflow/InstanceDetailDrawer.vue'
 import ProcessStatusTag from '@/components/workflow/ProcessStatusTag.vue'
 import { fetchStartableDefinitions } from '@/api/workflow/definition'
@@ -11,8 +14,11 @@ import {
   startProcessInstance,
 } from '@/api/workflow/instance'
 import type { ProcessDefinitionVO, ProcessInstanceVO } from '@/types/workflow'
-import { formatDateTime, pageTotal } from '@/utils/workflow'
+import { formatDateTime, pageTotal, processTypeLabel } from '@/utils/workflow'
 import { hasPerm } from '@/utils/permission'
+
+/** 需专用发起入口的流程（依赖多实例变量等） */
+const BIZ_START_KEYS = new Set(['expense', 'countersign-or', 'countersign-seq', 'leave'])
 
 const canMonitor = computed(() => hasPerm('workflow:instance:monitor'))
 
@@ -35,12 +41,28 @@ const detailInstanceId = ref<string | null>(null)
 const startVisible = ref(false)
 const startSubmitting = ref(false)
 const startableOptions = ref<ProcessDefinitionVO[]>([])
+const genericStartableOptions = computed(() =>
+  startableOptions.value.filter((d) => !BIZ_START_KEYS.has(d.key)),
+)
+const bizStartVisible = ref(false)
+const bizInitialKind = ref<BizProcessKind | null>('countersign-or')
 
 const startForm = reactive({
   processDefinitionKey: '',
   title: '',
   businessKey: '',
 })
+
+function openBizStart(kind?: BizProcessKind) {
+  bizInitialKind.value = kind || 'countersign-or'
+  bizStartVisible.value = true
+}
+
+function onBizStartSuccess() {
+  activeTab.value = 'mine'
+  query.pageNum = 1
+  loadData()
+}
 
 async function loadData() {
   loading.value = true
@@ -77,8 +99,9 @@ async function openStart() {
   startForm.businessKey = ''
   const res = await fetchStartableDefinitions({ pageNum: 1, pageSize: 100 })
   startableOptions.value = res.records
-  if (!startableOptions.value.length) {
-    ElMessage.warning('暂无可发起的流程，请先在流程定义中部署并激活')
+  if (!genericStartableOptions.value.length) {
+    ElMessage.info('或签 / 会签 / 报销请用「发起业务」；请假请用「请假管理」')
+    openBizStart('countersign-or')
     return
   }
   startVisible.value = true
@@ -87,6 +110,10 @@ async function openStart() {
 async function submitStart() {
   if (!startForm.processDefinitionKey) {
     ElMessage.warning('请选择流程')
+    return
+  }
+  if (BIZ_START_KEYS.has(startForm.processDefinitionKey)) {
+    ElMessage.warning('该流程请使用「发起业务」或对应业务菜单')
     return
   }
   startSubmitting.value = true
@@ -126,9 +153,14 @@ onMounted(() => {
         <el-tab-pane v-if="hasPerm('workflow:instance:list')" label="我发起的" name="mine" />
         <el-tab-pane v-if="canMonitor" label="实例监控" name="monitor" />
       </el-tabs>
-      <el-button v-perm="'workflow:instance:start'" type="success" size="small" @click="openStart">
-        发起流程
-      </el-button>
+      <div class="toolbar-actions">
+        <el-button v-perm="'workflow:instance:start'" type="primary" size="small" @click="openBizStart()">
+          发起业务
+        </el-button>
+        <el-button v-perm="'workflow:instance:start'" type="success" size="small" @click="openStart">
+          发起流程
+        </el-button>
+      </div>
     </div>
 
     <el-form
@@ -154,7 +186,12 @@ onMounted(() => {
     <el-table v-loading="loading" :data="tableData" border stripe class="data-table">
       <el-table-column label="标题" min-width="120" show-overflow-tooltip>
         <template #default="{ row }">
-          {{ row.title || row.processDefinitionName || row.processDefinitionKey || '-' }}
+          {{ row.title?.trim() || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="类型" min-width="100" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ processTypeLabel(row.processDefinitionKey, row.processDefinitionName) }}
         </template>
       </el-table-column>
       <el-table-column prop="processDefinitionKey" label="Key" width="72" show-overflow-tooltip />
@@ -205,6 +242,13 @@ onMounted(() => {
     </div>
 
     <el-dialog v-model="startVisible" title="发起流程" width="440px" destroy-on-close>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        title="或签 / 串行会签 / 费用报销请点「发起业务」；请假请用「请假管理」。"
+        class="start-alert"
+      />
       <el-form :model="startForm" label-width="72px">
         <el-form-item label="流程" required>
           <el-select
@@ -214,7 +258,7 @@ onMounted(() => {
             style="width: 100%"
           >
             <el-option
-              v-for="item in startableOptions"
+              v-for="item in genericStartableOptions"
               :key="item.id"
               :label="`${item.name || item.key} (v${item.version})`"
               :value="item.key"
@@ -239,6 +283,12 @@ onMounted(() => {
       :process-instance-id="detailInstanceId"
       @refreshed="loadData"
     />
+
+    <BusinessStartDialog
+      v-model="bizStartVisible"
+      :initial-kind="bizInitialKind"
+      @success="onBizStartSuccess"
+    />
   </PageCard>
 </template>
 
@@ -249,6 +299,12 @@ onMounted(() => {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .instance-tabs {
@@ -263,6 +319,10 @@ onMounted(() => {
     font-size: 12px;
     height: 32px;
   }
+}
+
+.start-alert {
+  margin-bottom: 12px;
 }
 
 .pager {

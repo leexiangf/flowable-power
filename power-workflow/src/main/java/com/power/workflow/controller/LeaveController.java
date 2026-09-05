@@ -1,5 +1,7 @@
 package com.power.workflow.controller;
 
+import com.power.common.model.PageQuery;
+import com.power.common.model.PageResult;
 import com.power.common.result.R;
 import com.power.workflow.dto.leave.LeaveCreateRequest;
 import com.power.workflow.dto.leave.LeaveVO;
@@ -38,6 +40,13 @@ public class LeaveController {
     @PreAuthorize("@authz.permit('workflow:leave:apply')")
     public R<LeaveVO> create(@Valid @RequestBody LeaveCreateRequest request) {
         return R.ok(leaveService.create(request));
+    }
+
+    @Operation(summary = "我的请假列表", description = "分页查询当前用户请假申请。权限码 workflow:leave:list。")
+    @GetMapping("/mine")
+    @PreAuthorize("@authz.permit('workflow:leave:list')")
+    public R<PageResult<LeaveVO>> mine(@Valid PageQuery page) {
+        return R.ok(leaveService.listMine(page.getPageNum(), page.getPageSize()));
     }
 
     /**

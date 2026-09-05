@@ -3,11 +3,17 @@ package com.power.workflow.controller;
 import com.power.common.model.PageQuery;
 import com.power.common.model.PageResult;
 import com.power.common.result.R;
+import com.power.workflow.dto.TaskAddSignRequest;
 import com.power.workflow.dto.TaskCompleteRequest;
+import com.power.workflow.dto.TaskDelegateRequest;
 import com.power.workflow.dto.TaskRejectRequest;
 import com.power.workflow.dto.TaskTransferRequest;
 import com.power.workflow.dto.TaskVO;
+import com.power.workflow.dto.UserTaskNodeVO;
+import com.power.workflow.dto.CcVO;
+import com.power.workflow.service.CcAppService;
 import com.power.workflow.service.WorkflowTaskAppService;
+import com.power.middleware.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 任务中心接口。
  */
@@ -30,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkflowTaskController {
 
     private final WorkflowTaskAppService workflowTaskAppService;
+    private final CcAppService ccAppService;
 
     /**
      * 我的待办分页。
@@ -107,7 +116,7 @@ public class WorkflowTaskController {
      * @param request 驳回入参
      * @return 空成功响应
      */
-    @Operation(summary = "驳回任务", description = "有上一用户任务则退回；否则以不通过结束。权限码 workflow:task:handle")
+    @Operation(summary = "驳回任务", description = "strategy=PREVIOUS/TO_NODE/TO_STARTER/TERMINATE。权限码 workflow:task:handle")
     @PostMapping("/{taskId}/reject")
     @PreAuthorize("@authz.permit('workflow:task:handle')")
     public R<Void> reject(@PathVariable String taskId, @RequestBody(required = false) TaskRejectRequest request) {
@@ -127,6 +136,71 @@ public class WorkflowTaskController {
     @PreAuthorize("@authz.permit('workflow:task:handle')")
     public R<Void> transfer(@PathVariable String taskId, @Valid @RequestBody TaskTransferRequest request) {
         workflowTaskAppService.transfer(taskId, request);
+        return R.ok();
+    }
+
+    @Operation(summary = "重新指派",
+            description = "修复无办理人孤儿任务或管理员改派。发起人/设计办理人/监控员/当前办理人可操作。"
+                    + "权限码 workflow:task:handle。")
+    @PostMapping("/{taskId}/assign")
+    @PreAuthorize("@authz.permit('workflow:task:handle')")
+    public R<Void> assign(@PathVariable String taskId, @Valid @RequestBody TaskTransferRequest request) {
+        workflowTaskAppService.assign(taskId, request);
+        return R.ok();
+    }
+
+    @Operation(summary = "加签", description = "BEFORE=前加签归还本人；AFTER=后加签由加签人推进。权限码 workflow:task:addsign")
+    @PostMapping("/{taskId}/add-sign")
+    @PreAuthorize("@authz.permit('workflow:task:addsign')")
+    public R<Void> addSign(@PathVariable String taskId, @Valid @RequestBody TaskAddSignRequest request) {
+        workflowTaskAppService.addSign(taskId, request);
+        return R.ok();
+    }
+
+    @Operation(summary = "减签", description = "删除当前会签多实例子任务。权限码 workflow:task:addsign")
+    @PostMapping("/{taskId}/reduce-sign")
+    @PreAuthorize("@authz.permit('workflow:task:addsign')")
+    public R<Void> reduceSign(@PathVariable String taskId) {
+        workflowTaskAppService.reduceSign(taskId);
+        return R.ok();
+    }
+
+    @Operation(summary = "可驳回节点", description = "列出可作驳回目标的用户任务。权限码 workflow:task:handle")
+    @GetMapping("/{taskId}/rejectable-nodes")
+    @PreAuthorize("@authz.permit('workflow:task:handle')")
+    public R<List<UserTaskNodeVO>> rejectableNodes(@PathVariable String taskId) {
+        return R.ok(workflowTaskAppService.listRejectableNodes(taskId));
+    }
+
+    @Operation(summary = "委派任务", description = "委派后 owner 保留，被委派人办理完成后回到 owner。权限码 workflow:task:delegate。")
+    @PostMapping("/{taskId}/delegate")
+    @PreAuthorize("@authz.permit('workflow:task:delegate')")
+    public R<Void> delegate(@PathVariable String taskId, @Valid @RequestBody TaskDelegateRequest request) {
+        workflowTaskAppService.delegate(taskId, request);
+        return R.ok();
+    }
+
+    @Operation(summary = "Resolve 委派", description = "委派 owner 收回任务。权限码 workflow:task:delegate。")
+    @PostMapping("/{taskId}/resolve")
+    @PreAuthorize("@authz.permit('workflow:task:delegate')")
+    public R<Void> resolve(@PathVariable String taskId) {
+        workflowTaskAppService.resolveDelegate(taskId);
+        return R.ok();
+    }
+
+    @Operation(summary = "我的抄送", description = "只读抄送列表。权限码 workflow:task:cc。")
+    @GetMapping("/cc")
+    @PreAuthorize("@authz.permit('workflow:task:cc')")
+    public R<PageResult<CcVO>> cc(@Valid PageQuery page) {
+        Long userId = SecurityUtils.currentUserId();
+        return R.ok(ccAppService.listMine(page.getPageNum(), page.getPageSize(), userId));
+    }
+
+    @Operation(summary = "抄送标记已读", description = "权限码 workflow:task:cc。")
+    @PostMapping("/cc/{ccId}/read")
+    @PreAuthorize("@authz.permit('workflow:task:cc')")
+    public R<Void> markCcRead(@PathVariable Long ccId) {
+        ccAppService.markRead(ccId, SecurityUtils.currentUserId());
         return R.ok();
     }
 }

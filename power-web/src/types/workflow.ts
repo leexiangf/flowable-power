@@ -64,10 +64,20 @@ export interface ProcessStartRequest {
   businessKey?: string
   title?: string
   variables?: Record<string, unknown>
+  ccUserIds?: string[]
 }
 
 export interface ProcessCancelRequest {
   reason?: string
+}
+
+export interface ProcessTerminateRequest {
+  reason?: string
+}
+
+export interface ProcessUrgeRequest {
+  comment?: string
+  targetUserId?: string
 }
 
 export interface ActivityTraceVO {
@@ -75,6 +85,8 @@ export interface ActivityTraceVO {
   activityName?: string
   activityType?: string
   assignee?: string
+  /** 办理人展示名 */
+  assigneeName?: string
   startTime?: string
   endTime?: string
   durationInMillis?: number
@@ -104,21 +116,62 @@ export interface TaskVO {
   createTime?: string
   endTime?: string
   title?: string
+  owner?: string
+  delegationState?: string
+  /** BEFORE / AFTER */
+  addSignMode?: string
+  multiInstance?: boolean
+  /** 仅候选人认领类任务可取消认领 */
+  canUnclaim?: boolean
 }
 
 export interface TaskCompleteRequest {
   comment?: string
   variables?: Record<string, unknown>
+  ccUserIds?: string[]
 }
 
 export interface TaskRejectRequest {
   comment?: string
+  /** PREVIOUS / TO_NODE / TO_STARTER / TERMINATE */
+  strategy?: string
   targetActivityId?: string
+}
+
+export interface TaskAddSignRequest {
+  type: 'BEFORE' | 'AFTER'
+  targetUserId: string
+  comment?: string
+}
+
+export interface UserTaskNodeVO {
+  activityId: string
+  activityName?: string
 }
 
 export interface TaskTransferRequest {
   targetUserId: string
   comment?: string
+}
+
+export interface TaskDelegateRequest {
+  targetUserId: string
+  comment?: string
+  ccUserIds?: string[]
+}
+
+export interface CcVO {
+  id: string
+  processInstanceId: string
+  taskId?: string
+  processDefinitionKey?: string
+  title?: string
+  businessKey?: string
+  fromUserId?: string
+  fromUserName?: string
+  readFlag?: number
+  createTime?: string
+  ended?: boolean
 }
 
 // ── 流程模型 ──
@@ -162,6 +215,7 @@ export interface LeaveCreateRequest {
   reason: string
   startDate: string
   endDate: string
+  ccUserIds?: string[]
 }
 
 /** 请假状态：1审批中 2通过 3驳回 4撤销 */

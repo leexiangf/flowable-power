@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.power.workflow/countersign-seq">
+
+  <!--
+    M5 示例：串行会签
+    启动变量：countersignUserIds - List&lt;String&gt; userId（按顺序）
+    办理变量：approved - Boolean
+    完成条件：全部完成，或 approved==false（一票否决）
+  -->
+  <process id="countersign-seq" name="串行会签" isExecutable="true">
+    <documentation>串行多实例会签：按 countersignUserIds 顺序依次审批</documentation>
+
+    <startEvent id="startEvent" name="开始"/>
+
+    <userTask id="seqSignTask"
+              name="串行会签"
+              flowable:assignee="${assignee}"
+              flowable:formKey="countersign/seq">
+      <multiInstanceLoopCharacteristics isSequential="true"
+                                        flowable:collection="${countersignUserIds}"
+                                        flowable:elementVariable="assignee">
+        <completionCondition>${nrOfCompletedInstances == nrOfInstances || approved == false}</completionCondition>
+      </multiInstanceLoopCharacteristics>
+    </userTask>
+
+    <exclusiveGateway id="resultGateway" name="是否通过" default="flow_reject"/>
+
+    <endEvent id="approveEnd" name="通过结束"/>
+    <endEvent id="rejectEnd" name="驳回结束"/>
+
+    <sequenceFlow id="flow_start" sourceRef="startEvent" targetRef="seqSignTask"/>
+    <sequenceFlow id="flow_to_gw" sourceRef="seqSignTask" targetRef="resultGateway"/>
+    <sequenceFlow id="flow_approve" sourceRef="resultGateway" targetRef="approveEnd">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow_reject" sourceRef="resultGateway" targetRef="rejectEnd"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_countersign_seq">
+    <bpmndi:BPMNPlane id="BPMNPlane_countersign_seq" bpmnElement="countersign-seq">
+      <bpmndi:BPMNShape id="shape_start" bpmnElement="startEvent">
+        <omgdc:Bounds x="100" y="120" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_seq" bpmnElement="seqSignTask">
+        <omgdc:Bounds x="200" y="98" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gw" bpmnElement="resultGateway">
+        <omgdc:Bounds x="380" y="115" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_ok" bpmnElement="approveEnd">
+        <omgdc:Bounds x="500" y="120" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_no" bpmnElement="rejectEnd">
+        <omgdc:Bounds x="387" y="220" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="e1" bpmnElement="flow_start">
+        <omgdi:waypoint x="136" y="138"/>
+        <omgdi:waypoint x="200" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e2" bpmnElement="flow_to_gw">
+        <omgdi:waypoint x="320" y="138"/>
+        <omgdi:waypoint x="380" y="140"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e3" bpmnElement="flow_approve">
+        <omgdi:waypoint x="430" y="140"/>
+        <omgdi:waypoint x="500" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="e4" bpmnElement="flow_reject">
+        <omgdi:waypoint x="405" y="165"/>
+        <omgdi:waypoint x="405" y="220"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

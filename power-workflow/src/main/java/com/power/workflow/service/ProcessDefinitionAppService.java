@@ -161,6 +161,34 @@ public class ProcessDefinitionAppService {
     }
 
     /**
+     * 删除部署（级联可选）。
+     */
+    public void deleteDeployment(String deploymentId, boolean cascade) {
+        if (!StringUtils.hasText(deploymentId)) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "deploymentId 不能为空");
+        }
+        long count = repositoryService.createDeploymentQuery()
+                .deploymentId(deploymentId.trim())
+                .count();
+        if (count == 0) {
+            throw new BizException(ErrorCode.NOT_FOUND, "部署不存在");
+        }
+        repositoryService.deleteDeployment(deploymentId.trim(), cascade);
+    }
+
+    /**
+     * 下载 BPMN 文件名（用于 Content-Disposition）。
+     */
+    public String resolveBpmnFilename(String processDefinitionId) {
+        ProcessDefinition def = requireDefinition(processDefinitionId);
+        String name = def.getResourceName();
+        if (!StringUtils.hasText(name)) {
+            name = def.getKey() + "-v" + def.getVersion() + ".bpmn20.xml";
+        }
+        return name;
+    }
+
+    /**
      * 读取流程定义对应的 BPMN XML 文本。
      *
      * @param processDefinitionId 流程定义 ID

@@ -7,12 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.flowable.common.engine.api.delegate.event.FlowableEngineEventType;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.spring.SpringProcessEngineConfiguration;
 import org.flowable.spring.boot.EngineConfigurationConfigurer;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StreamUtils;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Flowable Process 引擎扩展点。
@@ -42,6 +47,11 @@ public class FlowableEngineConfig {
                     ProcessKeys.LEAVE, "processes/leave.bpmn20.xml", "leave.bpmn20.xml");
             bootstrapIfAbsent(repositoryService, processDefinitionAppService,
                     ProcessKeys.EXPENSE, "processes/expense.bpmn20.xml", "expense.bpmn20.xml");
+            bootstrapIfAbsent(repositoryService, processDefinitionAppService,
+                    ProcessKeys.COUNTERSIGN_SEQ, "processes/countersign-seq.bpmn20.xml", "countersign-seq.bpmn20.xml");
+            // 或签完成条件已调整：强制升版，避免旧定义无「一票否决提前结束」
+            refreshBuiltin(repositoryService, processDefinitionAppService,
+                    ProcessKeys.COUNTERSIGN_OR, "processes/countersign-or.bpmn20.xml", "countersign-or.bpmn20.xml");
         };
     }
 
@@ -78,5 +88,41 @@ public class FlowableEngineConfig {
         }
         processDefinitionAppService.deployClasspathResource(classpath, resourceName);
         log.info("Bootstrapped {} process definition", key);
+    }
+
+    /**
+     * 已部署但缺少关键完成条件时升版部署一次（避免每次启动都打新版本）。
+     */
+    private static void refreshBuiltin(
+            RepositoryService repositoryService,
+            ProcessDefinitionAppService processDefinitionAppService,
+            String key,
+            String classpath,
+            String resourceName) {
+        ProcessDefinition latest = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(key)
+                .latestVersion()
+                .singleResult();
+        if (latest == null) {
+            processDefinitionAppService.deployClasspathResource(classpath, resourceName);
+            log.info("Bootstrapped {} process definition", key);
+            return;
+        }
+        try (InputStream in = repositoryService.getResourceAsStream(latest.getDeploymentId(), resourceName)) {
+            if (in == null) {
+                processDefinitionAppService.deployClasspathResource(classpath, resourceName);
+                log.info("Re-deployed {} (resource missing in deployment)", key);
+                return;
+            }
+            String xml = StreamUtils.copyToString(in, StandardCharsets.UTF_8);
+            if (xml.contains("approved == false")) {
+                log.info("{} process already has reject early-exit, skip refresh", key);
+                return;
+            }
+        } catch (Exception ex) {
+            log.warn("Check {} BPMN failed: {}, will re-deploy", key, ex.getMessage());
+        }
+        processDefinitionAppService.deployClasspathResource(classpath, resourceName);
+        log.info("Refreshed {} process definition for reject early-exit", key);
     }
 }

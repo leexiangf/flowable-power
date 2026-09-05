@@ -3,7 +3,9 @@ package com.power.workflow.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,4 +30,8 @@ public class ProcessStartRequest {
     /** 额外流程变量 */
     @Schema(description = "流程变量")
     private Map<String, Object> variables = new HashMap<>();
+
+    /** 抄送人 userId 列表 */
+    @Schema(description = "抄送人 userId 列表")
+    private List<String> ccUserIds = new ArrayList<>();
 }

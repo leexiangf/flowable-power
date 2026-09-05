@@ -18,7 +18,7 @@
       approved           - Boolean；经理/会签 complete 或 reject 写入
     会签完成条件：全部完成，或 approved==false（一票否决提前结束多实例）
   -->
-  <process id="expense" name="费用报销（变量办理人+会签）" isExecutable="true">
+  <process id="expense" name="费用报销" isExecutable="true">
     <documentation>先按 managerUserId 变量办理，再按 countersignUserIds 并行会签</documentation>
 
     <startEvent id="startEvent" name="开始"/>

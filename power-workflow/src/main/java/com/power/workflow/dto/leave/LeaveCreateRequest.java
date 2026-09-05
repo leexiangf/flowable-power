@@ -8,6 +8,8 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 请假申请创建请求。
@@ -36,4 +38,8 @@ public class LeaveCreateRequest {
     @NotNull
     @Schema(description = "结束日期", example = "2026-09-02")
     private LocalDate endDate;
+
+    /** 抄送人 userId 列表 */
+    @Schema(description = "抄送人 userId 列表")
+    private List<String> ccUserIds = new ArrayList<>();
 }

@@ -16,32 +16,32 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
- * power.demo 示例消费者：手动 ACK + Redis 幂等 + 延迟重试 + DLQ。
+ * power.system 消费者：手动 ACK + Redis 幂等 + 延迟重试 + DLQ。
  */
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "power.rabbitmq.consumer", name = "demo-enabled", havingValue = "true", matchIfMissing = true)
-public class DemoMessageListener extends AbstractManualAckListener {
+@ConditionalOnProperty(prefix = "power.rabbitmq.consumer", name = "system-enabled", havingValue = "true", matchIfMissing = true)
+public class SystemEventMessageListener extends AbstractManualAckListener {
 
     private final MessageRetrySupport retrySupport;
     private final MessageIdempotencyService idempotencyService;
 
-    @RabbitListener(queues = RabbitTopology.DEMO_QUEUE, ackMode = "MANUAL")
-    public void onDemoMessage(Message message, Channel channel) throws IOException {
+    @RabbitListener(queues = RabbitTopology.SYSTEM_QUEUE, ackMode = "MANUAL")
+    public void onSystemEvent(Message message, Channel channel) throws IOException {
         String body = new String(message.getBody(), StandardCharsets.UTF_8);
         handleWithRetry(message, channel, retrySupport,
-                RabbitTopology.DEMO_RETRY_QUEUE,
-                RabbitTopology.DEMO_DLQ,
+                RabbitTopology.SYSTEM_RETRY_QUEUE,
+                RabbitTopology.SYSTEM_DLQ,
                 () -> {
                     String idemKey = message.getMessageProperties().getMessageId();
                     if (idemKey == null) {
-                        idemKey = "demo:" + body.hashCode();
+                        idemKey = "system:" + body.hashCode();
                     }
                     if (!idempotencyService.tryMark(idemKey, Duration.ofDays(7))) {
-                        log.info("Skip duplicate demo message id={}", idemKey);
+                        log.info("Skip duplicate system message id={}", idemKey);
                         return;
                     }
-                    log.info("Demo MQ consumed: {}", body);
+                    log.info("System MQ consumed: {}", body);
                 });
     }
 }

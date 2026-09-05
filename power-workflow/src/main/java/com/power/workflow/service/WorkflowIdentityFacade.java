@@ -47,6 +47,31 @@ public class WorkflowIdentityFacade {
     }
 
     /**
+     * 断言用户可作为流程办理人（审批人/管理员），禁止仅普通员工。
+     *
+     * @param userIdStr 用户 ID
+     * @param label     错误提示前缀，如「部门经理」「会签人」
+     */
+    public void assertOperatorUser(String userIdStr, String label) {
+        if (!StringUtils.hasText(userIdStr)) {
+            throw new BizException(ErrorCode.BAD_REQUEST, label + "不能为空");
+        }
+        Long userId;
+        try {
+            userId = Long.valueOf(userIdStr.trim());
+        } catch (NumberFormatException ex) {
+            throw new BizException(ErrorCode.BAD_REQUEST, label + "无效：" + userIdStr);
+        }
+        List<String> roles = listRoleCodes(userId);
+        boolean operator = roles != null && roles.stream().anyMatch(r ->
+                "APPROVER".equalsIgnoreCase(r) || "ADMIN".equalsIgnoreCase(r));
+        if (!operator) {
+            throw new BizException(ErrorCode.BAD_REQUEST,
+                    label + "必须是审批人，不能选择普通员工");
+        }
+    }
+
+    /**
      * 解析用户展示名：优先昵称，否则用户名；失败时回退为 userId。
      *
      * @param userIdStr 用户 ID 字符串

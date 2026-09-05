@@ -14,6 +14,9 @@ public final class WorkflowMqTopics {
     /** 流程撤销 / 删除 */
     public static final String TAG_PROCESS_CANCELLED = "process.cancelled";
 
+    /** 流程催办 */
+    public static final String TAG_PROCESS_URGED = "process.urged";
+
     private WorkflowMqTopics() {
     }
 }

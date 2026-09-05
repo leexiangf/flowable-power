@@ -39,6 +39,8 @@ public class ProcessTraceAppService {
     private final TaskService taskService;
     private final ProcessDefinitionAppService processDefinitionAppService;
     private final ProcessEngineConfiguration processEngineConfiguration;
+    private final ProcessInstanceAppService processInstanceAppService;
+    private final WorkflowIdentityFacade workflowIdentityFacade;
 
     /**
      * 查询实例流转时间线（含审批意见）。
@@ -47,6 +49,7 @@ public class ProcessTraceAppService {
      * @return 活动节点列表
      */
     public List<ActivityTraceVO> timeline(String processInstanceId) {
+        processInstanceAppService.assertCanViewInstance(processInstanceId);
         requireHistoric(processInstanceId);
         List<HistoricActivityInstance> activities = historyService.createHistoricActivityInstanceQuery()
                 .processInstanceId(processInstanceId)
@@ -63,11 +66,13 @@ public class ProcessTraceAppService {
             if ("sequenceFlow".equals(act.getActivityType())) {
                 continue;
             }
+            String assignee = act.getAssignee();
             result.add(ActivityTraceVO.builder()
                     .activityId(act.getActivityId())
                     .activityName(act.getActivityName())
                     .activityType(act.getActivityType())
-                    .assignee(act.getAssignee())
+                    .assignee(assignee)
+                    .assigneeName(workflowIdentityFacade.resolveDisplayName(assignee))
                     .startTime(act.getStartTime())
                     .endTime(act.getEndTime())
                     .durationInMillis(act.getDurationInMillis())
@@ -85,6 +90,7 @@ public class ProcessTraceAppService {
      * @return 高亮视图
      */
     public ProcessHighlightVO highlight(String processInstanceId) {
+        processInstanceAppService.assertCanViewInstance(processInstanceId);
         HistoricProcessInstance historic = requireHistoric(processInstanceId);
         Set<String> finished = new LinkedHashSet<>();
         historyService.createHistoricActivityInstanceQuery()
@@ -119,6 +125,7 @@ public class ProcessTraceAppService {
      * @return PNG 字节
      */
     public byte[] diagramPng(String processInstanceId) {
+        processInstanceAppService.assertCanViewInstance(processInstanceId);
         HistoricProcessInstance historic = requireHistoric(processInstanceId);
         List<String> highLightedActivities = new ArrayList<>();
         if (historic.getEndTime() == null) {

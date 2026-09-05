@@ -1,4 +1,4 @@
-package com.power.workflow.demo;
+package com.power.workflow.expense;
 
 import com.power.workflow.constant.WorkflowVars;
 import com.power.workflow.support.WorkflowApprovals;
